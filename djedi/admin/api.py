@@ -60,7 +60,7 @@ class APIView(View):
             else:
                 data[prefix] = value
 
-        return data['data'], data['meta'], data['uri']
+        return data['data'], data['meta']
 
     def decode_uri(self, uri):
         decoded = urlunquote(uri)
@@ -104,7 +104,7 @@ class NodeApi(JSONResponseMixin, APIView):
             {uri: x, content: y}
         """
         uri = self.decode_uri(uri)
-        data, meta, _ = self.get_post_data(request)
+        data, meta = self.get_post_data(request)
         meta['author'] = auth.get_username(request)
         node = cio.set(uri, data, publish=False, **meta)
         return self.render_to_json(node)
@@ -178,9 +178,8 @@ class RenderApi(APIView):
         """
         try:
             plugin = plugins.get(ext)
-            data, meta, uri = self.get_post_data(request)
-            if uri == {}:
-                uri = URI(ext=ext)
+            data, meta = self.get_post_data(request)
+            uri = URI(ext=ext)
             node = Node(uri=uri, content=data)
             data = plugin.load_node(node)
             node.content = data
@@ -208,7 +207,7 @@ class NodeEditor(JSONResponseMixin, DjediContextMixin, APIView):
     @never_cache
     def post(self, request, uri):
         uri = self.decode_uri(uri)
-        data, meta, _ = self.get_post_data(request)
+        data, meta = self.get_post_data(request)
         meta['author'] = auth.get_username(request)
         node = cio.set(uri, data, publish=False, **meta)
 
