@@ -284,7 +284,7 @@ class PrivateRestTest(ClientTest):
                 },
             ]
         }
-        listnode = cio.set('sv-se@page/apa.list', data)
+        listnode = cio.set('sv-se@page/apa.list', json.dumps(data))
         text_node_uri = listnode.uri.clone(query={
             'key': ['321cba'],
             'plugin': ['txt']
@@ -310,11 +310,23 @@ class PrivateRestTest(ClientTest):
         self.assertEqual(md_node['content'], '<h1>One banana</h1>')
         self.assertEqual(md_node['data'], '# One banana')
 
+        form = {
+            'data[width]': u'64',
+            'data[height]': u'64',
+            'data[crop]': u'64,64,128,128',
+            'data[id]': u'vw',
+            'data[class]': u'year-53',
+            'data[alt]': u'Zwitter',
+            'meta[comment]': u'VW'
+        }
+        response = self.post('api', 'i18n://sv-se@page/apa.list?key=imagekey&plugin=img', form)
+        self.assertEqual(response.status_code, 200)
+
         # TODO: Test getting default data
-        img_node_in_list = cio.load('sv-se@page/apa.list?key=idontexist&plugin=img')
-        img_node = cio.load('sv-se@page/monkeydo.img')
-        #self.assertEqual(img_node_in_list['data'], img_node['data'])
-        #self.assertEqual(img_node_in_list['content'], img_node['content'])
+        # img_node_in_list = cio.load('sv-se@page/apa.list?key=idontexist&plugin=img')
+        # img_node = cio.load('sv-se@page/monkeydo.img')
+        # self.assertEqual(img_node_in_list['data'], img_node['data'])
+        # self.assertEqual(img_node_in_list['content'], img_node['content'])
 
         # Test setting new subnode data
         cio.set('sv-se@page/apa.list?key=newkey&plugin=md', '# Banan')
@@ -330,7 +342,7 @@ class PrivateRestTest(ClientTest):
         self.assertEqual(node_data['data'], '# Two Bananas')
 
         # Test setting it multiple times
-        cio.set('sv-se@page/apa.list#draft', {
+        cio.set('sv-se@page/apa.list#draft', json.dumps({
             'direction': 'col',
             'children': [
                 {
@@ -339,7 +351,7 @@ class PrivateRestTest(ClientTest):
                     'data': '# One banana',
                 }
             ]
-        })
+        }))
         cio.set('sv-se@page/apa.list?key=abc123&plugin=md', '# No bananas')
         cio.set('sv-se@page/apa.list?key=abc123&plugin=md', '# Many bananas')
         cio.set('sv-se@page/apa.list?key=abc123&plugin=md', '# Many bananas')
@@ -359,7 +371,7 @@ class PrivateRestTest(ClientTest):
         })
 
         # Test nested list
-        cio.set('sv-se@page/apa.list', {
+        cio.set('sv-se@page/apa.list', json.dumps({
             'direction': 'col',
             'children': [
                 {
@@ -368,8 +380,8 @@ class PrivateRestTest(ClientTest):
                     'data': '# One banana',
                 }
             ]
-        })
-        cio.set('sv-se@page/apa.list?key=321cba&plugin=list', {
+        }))
+        cio.set('sv-se@page/apa.list?key=321cba&plugin=list', json.dumps({
             'direction': 'col',
             'children': [
                 {
@@ -378,7 +390,7 @@ class PrivateRestTest(ClientTest):
                     'data': '# My banana',
                 }
             ]
-        })
+        }))
         node_data = cio.load('sv-se@page/apa.list?key=abc123&plugin=md')
         list_node = cio.load('sv-se@page/apa.list?key=321cba&plugin=list')
         parent_node = cio.load('sv-se@page/apa.list')
@@ -438,10 +450,24 @@ class PrivateRestTest(ClientTest):
             ]
         })
 
-        cio.set('sv-se@page/render.list', {
+        empty_subnode = cio.set('sv-se@page/apa.list?key=321cba_betterkey&plugin=md', "")
+        list_node = cio.load('sv-se@page/apa.list?key=321cba&plugin=list')
+        self.assertIsNone(empty_subnode.content)
+        self.assertEqual(list_node['data'], {
+            'direction': 'col',
+            'children': [
+                {
+                    'key': 'betterkey',
+                    'plugin': 'md',
+                    'data': '',
+                }
+            ]
+        })
+
+        cio.set('sv-se@page/render.list', json.dumps({
             'direction': 'col',
             'children': []
-        })
+        }))
         response = self.post(
             'api.render',
             'md',
@@ -471,6 +497,9 @@ class PrivateRestTest(ClientTest):
             b'</li>'
             b'</ul>'
         )
+
+        empty_subnode = cio.set('sv-se@page/listthatdoesntexist.list?key=321cba&plugin=md', "# Hej")
+        self.assertEqual(empty_subnode.content, '<h1>Hej</h1>')
 
 
 class PublicRestTest(ClientTest):
